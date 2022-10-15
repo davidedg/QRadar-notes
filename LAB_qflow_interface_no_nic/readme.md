@@ -2,25 +2,22 @@
 
 After updating my QRadar lab to version 7.5, it seems I hit a wall in getting Network Interface Flows to work.
 The GUI was not picking up the network interfaces list:
+
 ![screenshot](https://github.com/davidedg/QRadar-notes/raw/main/LAB_qflow_interface_no_nic/qradar_75_qflow_interface_missing_nic.PNG)
+
 **(note the *"No unconfigured flow interface detected for selected Flow Collector"*).**
 
 At first I tried to add another interface and explicitly configure it as a monitor one, but that didn't help.
-I also tried to search online, both on release notes and online forums, but have not come up with anything related to this issue. Maybe I am just missing something.
+I also tried searching online, both on release notes and online forums, but have not come up with anything related to this issue. Maybe I am just missing something.
 
 As this is just for my home lab, I decided to dig deeper and see if I could somehow "inject" the configuration manually, mainly to hack a little bit more into the product.
 
-After using vast amounts of grepping and sql full query logging, these are my findings.
+After using vast amounts of grepping, sql full query logging and vm snapshots...  these are my findings.
 **Needless to say, DON'T YOU EVER DARE TO USE IT IN PRODUCTION !!**
 
 
-Basically, when a flow source is defined, some new rows are added into console postgres db.
-These are the involved tables, inspect their content first:
 
-    SELECT * FROM flowsource;
-    SELECT * FROM flowsource_config;
-    SELECT * FROM flowsource_config_parameters;
-    SELECT * FROM flowsource_lookup;
+Basically, when a flow source is defined, some new rows are added into console postgres db.
 
 The order of the tasks is:
 1. Ensure there are no pending deployments
