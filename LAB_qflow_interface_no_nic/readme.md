@@ -21,7 +21,7 @@ Basically, when a flow source is defined, some new rows are added into console p
 
 The order of the tasks is:
 1. Ensure there are no pending deployments
-2. Create a Flow Source Config (table flowsource_config and sequence flowsourceconfig_sequence )
+2. Create a Flow Source Config (table `flowsource_config` and sequence `flowsourceconfig_sequence` )
 3. Define config parameters, like the interface to be used and a capture filter (table `flowsource_config_parameters` and sequence `flowsource_config_parameters_sequence`)
 4. Create the new FlowSource, referring the Flow Source Config (table `flowsource` and sequence `flowsource_sequence`)
 5. Notify the update (tables `deployed_component`  and `ServerHost`)
