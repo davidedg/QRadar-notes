@@ -12,7 +12,7 @@ Debug crashcourse:
 
 `/opt/qradar/support/recon connect 1308`
 
-- examine app error log
+- examine app error log from inside container  ( alternatively, you could just `tail -f /store/docker/volumes/qapp-1308/log/app.stderr` )
 
 `sh-4.4$ tail -f /opt/app-root/store/log/app.stderr`
 
