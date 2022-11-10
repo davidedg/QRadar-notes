@@ -1,7 +1,14 @@
-# Fix for "Internal Server Error" on QRadar Analyst Workflow (supposedly bugged version) 2.31.4
+# Fix for "Internal Server Error" on QRadar Analyst Workflow 2.31.4 (now fixed in 2.31.7)
 
 Trying out new `/console/ui/` on 7.5(fp2if2), but apparently got unlucky and faced what seems to be a bug with latest (v2.31.4) app version.
-
+\
+(it should now have been fixed in Version 2.31.7), from its Release Notes:
+> Resolves an issue where unsupported locales caused a server error 
+>
+\
+\
+Keeping this just for historical purposes:
+\
 Debug crashcourse:
 
 - discover app id
