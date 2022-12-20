@@ -74,7 +74,7 @@ General Disk Layout:
     /dev/mapper/rootrhel-varlogaudit /var/log/audit       xfs        inode64,logbsize=256k,noatime,nobarrier 0 0
     UUID=98ff1a98-fc33-4926-aa6e-4b8ac6ccbfad swap                 swap       defaults             0 0
 
-    [root@qradar ~]# df -l -T | grep -v tmpfs
+    [root@qradar ~]# df -l -T -x tmpfs -x devtmpfs
     Filesystem                       Type     1K-blocks     Used Available Use% Mounted on
     /dev/mapper/rootrhel-root        xfs       50822916 23131248  27691668  46% /
     /dev/sda2                        xfs        1038336   293780    744556  29% /boot
