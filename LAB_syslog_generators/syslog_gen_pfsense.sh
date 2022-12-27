@@ -119,7 +119,7 @@ function print_summary() {
     fi
 
     echo "######################################################################"
-    echo ">>>>> ${pps}/sec [${pps_expected}/sec] | ${pph}/hour [${pph_expected}/hour] | target=$pph_delta"
+    echo ">>>>> count=${counter} | ${pps}/sec [${pps_expected}/sec] | ${pph}/hour [${pph_expected}/hour] | target=$pph_delta"
     echo "######################################################################"
 }
 
@@ -225,7 +225,6 @@ while true; do
     SYSLOGPKT="<134>$(date +"%b %d %H:%M:%S") filterlog[$((10000+RANDOM%89999))]: 255,,,0,vtnet0,match,pass,in,4,0x0,,64,0,0,DF,6,tcp,52,$SRCADDR,$DSTADDR,$LPORT,$RPORT,0,S,2172974099,,64240,,mss;nop;wscale;nop;nop;sackOK"
 
     $REALSEND && echo "$SYSLOGPKT" > $FIFO
-    printf '%-6s' "$counter"
     printf "${SYSLOGPKT}\n"
 
 
