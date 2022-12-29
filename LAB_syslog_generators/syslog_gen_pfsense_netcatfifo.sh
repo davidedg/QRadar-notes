@@ -89,11 +89,11 @@ tail -f $FIFO | stdbuf -i0 -o0 netcat $SYSLOG_SERVER $SYSLOG_PORT &
 ######################################################################
 
 # fill wth src/dst IP addresses, in random order, also shuffles remote ports
-DSTADDRESSES=$(prips $DST_ADDR_POOL -e ...0,255 | shuf)
+DSTADDRESSES=$(prips -e ...0,255 $DST_ADDR_POOL | shuf)
 DSTADDRESSES=( $DSTADDRESSES ) ## bash splits on expansion
 DSTADDRESSES_LEN=${#DSTADDRESSES[@]}
 
-SRCADDRESSES=$(prips $SRC_ADDR_POOL -e ...0,255 | shuf)
+SRCADDRESSES=$(prips -e ...0,255 $SRC_ADDR_POOL | shuf)
 SRCADDRESSES=( $SRCADDRESSES ) ## bash splits on expansion
 SRCADDRESSES_LEN=${#SRCADDRESSES[@]}
 
