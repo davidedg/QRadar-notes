@@ -4,6 +4,7 @@ Extract all Ariel Properties together with the Content Pack from where they were
     read -r -d '' Q << 'EOF'
     SELECT
       cl.localization_value AS extension,
+      cp.version,
       cm.content_type,
       cp.content_status,
       ap.expressionid,
