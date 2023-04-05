@@ -1,4 +1,5 @@
 SELECT
+ cr.uuid,
  cl.localization_value AS extension,
  cm.content_type,
  cp.content_status,
@@ -8,8 +9,11 @@ SELECT
  cr.bb, 
  cr.rule_type,
  cr.origin,
- cr.uuid,
  cr.link_uuid,
+ cr.create_date,
+ cr.mod_date,
+ cr.average_capacity,
+ EXTRACT(epoch FROM to_timestamp(cr.capacity_timestamp / 1000)) / 86400 + 25569 AS capacity_timestamp_ef, -- Excel datetime Format
  cr.base_host_id,
  cr.flags
 FROM
