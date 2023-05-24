@@ -3,6 +3,7 @@ Extract all rules together with Extensions
     read -r -d '' Q << 'EOF'
     SELECT
      cr.uuid,
+     cr.id,
      cl.localization_value AS extension,
      cm.content_type,
      cp.content_status,
@@ -18,7 +19,8 @@ Extract all rules together with Extensions
      cr.average_capacity,
      EXTRACT(epoch FROM to_timestamp(cr.capacity_timestamp / 1000)) / 86400 + 25569 AS capacity_timestamp_ef, -- Excel datetime Format
      cr.base_host_id,
-     cr.flags
+     cr.flags,
+     cr.rule_data
     FROM
     ( SELECT *,
        array_to_string(REGEXP_MATCHES(convert_from(crx.rule_data, 'UTF8'), '><name>(.*)</name><notes>'), '') AS crname,
