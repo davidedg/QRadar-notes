@@ -37,3 +37,12 @@ Bucket Usage - Multi-Tenant:
         ionice -t -c3 nice -n +19 find /store/ariel/events/*/aux/$T/ -type f -name "*~$Z" -print0 | du -xsch --files0-from=- | grep total | tee -a store-usage-tenants.log
       done
     done
+
+
+Includes Global Views:
+
+    for ((d=1;d<=30;d++)); do
+      ionice -t -c3 nice -n +19 find /store/ariel/{events,flows,gv,statistics}/{records,payloads,}/{aux/*,GV*,}/$(date --date "-$d day" +"%Y/%-m/%-d") -maxdepth 0 -print0 2>/dev/null | du -xsch --files0-from=- | grep total | cut -dt -f1|xargs -0 printf "$d;%s"
+    done
+
+
