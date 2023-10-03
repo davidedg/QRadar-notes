@@ -4,7 +4,7 @@ Extract all rules together with Extensions
     SELECT
      cr.uuid,
      cr.id,
-     cl.localization_value AS extension,
+     CASE WHEN cl.localization_value <> '' THEN cl.localization_value ELSE cp.name END AS extension,
      cm.content_type,
      cp.content_status,
      cp.version,
