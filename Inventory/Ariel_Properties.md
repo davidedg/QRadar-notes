@@ -3,7 +3,7 @@ Extract all Ariel Properties together with the Content Pack from where they were
 
     read -r -d '' Q << 'EOF'
     SELECT
-      cl.localization_value AS extension,
+      CASE WHEN cl.localization_value <> '' THEN cl.localization_value ELSE cp.name END AS extension,
       cp.version,
       cm.content_type,
       cp.content_status,
