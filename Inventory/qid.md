@@ -3,7 +3,7 @@ Extract all QIDs together with the Content Pack from where they were installed:
 
     read -r -d '' Q << 'EOF'
     SELECT
-     cl.localization_value AS extension,
+     CASE WHEN cl.localization_value <> '' THEN cl.localization_value ELSE cp.name END AS extension,
      cp.version,
      cp.content_status,
      q.id AS qid_id,
@@ -23,7 +23,7 @@ Extract all QIDs only if they were installed by an Extension/Content Pack:
 
     read -r -d '' Q << 'EOF'
     SELECT
-     cl.localization_value AS extension,
+     CASE WHEN cl.localization_value <> '' THEN cl.localization_value ELSE cp.name END AS extension,
      cp.version,
      cp.content_status,
      q.id AS qid_id,
