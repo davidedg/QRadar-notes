@@ -2,7 +2,7 @@ Get all apps and content packs:
 
     read -r -d '' Q << 'EOF'
     SELECT DISTINCT
-      cl.localization_value AS extension,
+      CASE WHEN cl.localization_value <> '' THEN cl.localization_value ELSE cp.name END AS extension,
       cp.version,
       to_timestamp(cp.install_time / 1000)::date AS install_time,
       to_timestamp(cp.uninstall_time / 1000)::date AS uninstall_time,
