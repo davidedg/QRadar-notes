@@ -195,15 +195,14 @@ You may also want a quick GPT partition backup (especially for Option A):
 
 I tried with everything still running, this is just to be on a safer side...
 \
-Stop QRadar services:
+Stop QRadar services (last line is optional, should be safe enough as long as the db is shut down):
 
     systemctl stop ecs-ec-ingress
     systemctl stop ecs-ep
-    service tomcat stop
     service hostcontext stop
+    service tomcat stop
     service hostservices stop 
-    systemctl stop systemStabMon
-    systemctl stop crond
+    systemctl stop systemStabMon crond chronyd postfix snmpd containerd rhnsd rhsmcertd syslog
 
 \
 3 - Option-A - Add LVM space by extending existing virtual disk
@@ -213,9 +212,9 @@ Extend virtual disk:
 \
 On ESXi, this should be doable online - https://kb.vmware.com/s/article/1004047
 \
-If you can plan for greater downtime, just do it offline...
+If you can plan for a longer downtime, just do it offline...
 \
-Say we extend +12 GB
+Say we want to extend by +12 GB
 \
 We need to remove swap on /dev/sda5, to allow for /dev/sda4 expansion.
 \
@@ -322,7 +321,7 @@ Add new PV to VG
 4 - Extend LV
 -------------
 
-    lvresize -L +4G /dev/rootrhel/root
+    lvresize -L +1G /dev/rootrhel/root
     lvresize -L +1G /dev/rootrhel/storetmp
     lvresize -L +1G /dev/rootrhel/tmp
     lvresize -L +1G /dev/rootrhel/home
@@ -330,6 +329,7 @@ Add new PV to VG
     lvresize -L +1G /dev/rootrhel/varlogaudit
     lvresize -L +1G /dev/rootrhel/varlog
     lvresize -L +1G /dev/rootrhel/var
+    lvextend -l 100%FREE /dev/storerhel/store
 
 
 \
@@ -344,6 +344,7 @@ Add new PV to VG
     xfs_growfs /dev/rootrhel/varlogaudit
     xfs_growfs /dev/rootrhel/varlog
     xfs_growfs /dev/rootrhel/var
+    xfs_growfs /dev/storerhel/store
 
 \
 6 - Reboot
