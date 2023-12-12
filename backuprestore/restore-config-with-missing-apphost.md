@@ -5,7 +5,6 @@
 - Restore Everything (or leave out what you don't need)
 - Wait :D
 - Go to Admin - System and License Management and remove all the hosts except the AppHost
-- Try the first full deploy, it will fail on the missing AppHost but should otherwise complete
 - Force stop all apps (see [this](https://www.ibm.com/support/pages/qradar-changing-status-application-fails-error-application-instance-not-required-state) article)
 - Get the Console managed host id: `psql -U qradar -c "SELECT id FROM managedhost WHERE isconsole;"`
 - Update `installed_application_host_type_property` to point the app instances to the Console
