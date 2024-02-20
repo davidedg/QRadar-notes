@@ -8,7 +8,8 @@ Extract all rules together with Extensions
      cm.content_type,
      cp.content_status,
      cp.version,
-     cr.crname AS rule_name,
+     cr.crowner AS owner,
+     cr.crname AS rule_name,     
      cr.enabled,
      cr.bb, 
      cr.rule_type,
@@ -23,6 +24,7 @@ Extract all rules together with Extensions
      cr.rule_data
     FROM
     ( SELECT *,
+       array_to_string(REGEXP_MATCHES(convert_from(crx.rule_data, 'UTF8'), ' owner="([\.\w-_]+)" '), '') AS crowner,
        array_to_string(REGEXP_MATCHES(convert_from(crx.rule_data, 'UTF8'), '><name>(.*)</name><notes>'), '') AS crname,
        CASE WHEN (
         crx.rule_data LIKE '% enabled="true" %'
