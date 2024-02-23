@@ -20,6 +20,6 @@ For each match:
           [[ $tablename == qidmap ]] && continue
     
           echo "###### $tablename($tableoid) ######"
-        # psql -U qradar -xc "SELECT * from $tablename;" | grep -v -e " RECORD.*$SEARCHSTRING" | grep -A10 -B10 $SEARCHSTRING
+          psql -U qradar -xc "SELECT * from $tablename;" | grep -v -e " RECORD.*$SEARCHSTRING" | grep -A10 -B10 $SEARCHSTRING
           echo "########################################"
         done
