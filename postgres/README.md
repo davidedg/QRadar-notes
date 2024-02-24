@@ -10,7 +10,7 @@ The connection is:
 \
 On QRadar, create a socat listener on port 55432, pointing to the postgres socket:
 
-    socat -d -d -d TCP-LISTEN:55432,reuseaddr,fork UNIX-CLIENT:/var/run/postgresql/.s.PGSQL.5432
+    screen socat -d -d TCP-LISTEN:55432,reuseaddr,fork UNIX-CLIENT:/var/run/postgresql/.s.PGSQL.5432
 
 \
 On the controlling machine, open an SSH tunnel-only connection to QRadar:
