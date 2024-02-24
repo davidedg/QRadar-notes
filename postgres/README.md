@@ -27,9 +27,9 @@ Now you can configure DBeaver:
 `Username: qradar`
 
 \
-![dbeaver-qradar-postgres-conf](./postgres/dbeaver-qradar-postgres-conf.png)
+![dbeaver-qradar-postgres-conf](./dbeaver-qradar-postgres-conf.png)
 
 \
 And enjoy browsing the DB with a GUI:
 
-![dbeaver-qradar-postgres-connected](./postgres/dbeaver-qradar-postgres-connected.png)
+![dbeaver-qradar-postgres-connected](./dbeaver-qradar-postgres-connected.png)
