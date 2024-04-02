@@ -1,8 +1,8 @@
 # CSS Override for the Top Navigation header
 
-If you manage many QRadar environments, you might want a way to easily distinguish them.
+If you manage many QRadar environments, you might want an easy way to visually distinguish them.
 \
-For exmaple, by using a different color for the Top Navigation Layout:
+For example, by using a different color for the Top Navigation Layout:
 
 \
 ![qradar_green_navigation_header](./qradar_green_navigation_header.png)
