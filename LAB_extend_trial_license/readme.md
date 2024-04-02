@@ -1,18 +1,18 @@
-# Trial license extension for QRadar 7.4+
+# Trial license extension
 
-Quick and dirty way to extend trial license for QRadar 7.4.x labs
-\
+Quick and dirty way to extend trial license for lab use
+
 \
 **!!! DISCLAIMER !!!**
 ------------------------
-Needless to say, this is just for **lab environments** (AIO 3199) - use at your own risk !!!
+Needless to say, this is just for **lab environments** - use at your own risk !!!
 ------------------------
 \
 Export current license data into a csv file:
 
-  	mkdir license
-    cd license
-    psql -U qradar -c "\COPY (SELECT * FROM license_key) TO 'license_key_original.csv'  WITH DELIMITER ';' CSV HEADER;"
+	mkdir license
+	cd license
+	psql -U qradar -c "\COPY (SELECT * FROM license_key) TO 'license_key_original.csv'  WITH DELIMITER ';' CSV HEADER;"
 
 \
 Extract the current expiration date and extend it:
@@ -43,4 +43,4 @@ If everything looks good, update the license:
 \
 Now do a full deploy (cmdline or gui):
 
-	  /opt/qradar/upgrade/util/setup/upgrades/do_deploy.pl
+	/opt/qradar/upgrade/util/setup/upgrades/do_deploy.pl
