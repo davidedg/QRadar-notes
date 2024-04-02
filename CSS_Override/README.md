@@ -35,3 +35,6 @@ In this file, you can declare the CSS overrides for the sites that you desire, f
 
 \
 Note: the `!important` directive is required.
+
+\
+Restart Firefox for the changes to take effect.
