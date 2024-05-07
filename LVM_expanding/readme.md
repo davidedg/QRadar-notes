@@ -17,7 +17,10 @@ Plan
 0. Inspect Disk Layout
 1. Ensure a full backup is available
 2. Stop all services
-3. Add LVM extents (Option A: extend over existing virtual disk; Option B: just add a separate virtual disk)
+3. Add LVM extents: 
+   - Option A (safest): just add a separate virtual disk
+   - Option B: extend over existing virtual disk and add a new partition
+   - ~~Option C (complicated): extend over existing virtual disk, preserving existing layout~~
 4. Extend LV
 5. Grow XFS volume
 6. Reboot
@@ -26,168 +29,108 @@ Plan
 0 - Inspect Disk Layout
 ----------------------
 
-General Disk Layout:
+Get Disk/Partitions Layout:
 
-    [root@qradar ~]# lsblk -f -p
-    NAME                                 FSTYPE      LABEL                           UUID                                   MOUNTPOINT
-    /dev/sda
-    ├─/dev/sda1
-    ├─/dev/sda2                          xfs                                         d8fd5697-61a3-45a4-952f-5d8b4f27ba20   /boot
-    ├─/dev/sda3                          xfs                                         378930d5-4dac-4a4a-87ab-16412678a0e3   /recovery
-    ├─/dev/sda4                          LVM2_member                                 M9N7PH-3gD5-mXwO-GU1N-Do3x-kdQ1-pEXZs7
-    │ ├─/dev/mapper/rootrhel-root        xfs                                         8f0d4a1d-f784-46d1-b18d-3b6311aff38b   /
-    │ ├─/dev/mapper/rootrhel-storetmp    xfs                                         13186d4a-7092-4b7d-8faa-efc0671bb669   /storetmp
-    │ ├─/dev/mapper/rootrhel-tmp         xfs                                         f4f7e73e-bc42-4735-bf47-2092f30e7660   /tmp
-    │ ├─/dev/mapper/rootrhel-home        xfs                                         159c3a91-e4e6-45f3-884c-bcc5822fb22a   /home
-    │ ├─/dev/mapper/rootrhel-opt         xfs                                         2022bd67-f07d-4708-8e8d-d178e1f5456e   /opt
-    │ ├─/dev/mapper/rootrhel-varlogaudit xfs                                         fffceae4-7c14-4900-9def-d36a83c50c57   /var/log/audit
-    │ ├─/dev/mapper/rootrhel-varlog      xfs                                         d254a82b-b806-4f00-944f-d719120e1581   /var/log
-    │ └─/dev/mapper/rootrhel-var         xfs                                         a0d8a606-1b4c-4023-9876-2a43d5506d47   /var
-    └─/dev/sda5                          swap                                        98ff1a98-fc33-4926-aa6e-4b8ac6ccbfad   [SWAP]
-
-    [root@qradar ~]# blkid
-    /dev/sda1: PARTUUID="2df16601-a25d-4461-a991-9fbfeba1b83c"
-    /dev/sda2: UUID="d8fd5697-61a3-45a4-952f-5d8b4f27ba20" TYPE="xfs" PARTUUID="6157294e-fad4-42a5-849d-be5d447c3a9a"
-    /dev/sda3: UUID="378930d5-4dac-4a4a-87ab-16412678a0e3" TYPE="xfs" PARTUUID="8b9f8646-91c0-4d91-870c-dcc223b836d0"
-    /dev/sda4: UUID="M9N7PH-3gD5-mXwO-GU1N-Do3x-kdQ1-pEXZs7" TYPE="LVM2_member" PARTUUID="05977c2d-293d-4497-a984-0d5706f459ad"
-    /dev/sda5: UUID="98ff1a98-fc33-4926-aa6e-4b8ac6ccbfad" TYPE="swap" PARTUUID="e6687dc7-4f16-4740-9e36-35d9618f2fe8"
-    /dev/sr0: UUID="2021-05-17-15-52-56-00" LABEL="QRadar-2020_11_0_20210517144015" TYPE="iso9660" PTTYPE="dos"
-    /dev/mapper/rootrhel-root: UUID="8f0d4a1d-f784-46d1-b18d-3b6311aff38b" TYPE="xfs"
-    /dev/mapper/rootrhel-storetmp: UUID="13186d4a-7092-4b7d-8faa-efc0671bb669" TYPE="xfs"
-    /dev/mapper/rootrhel-tmp: UUID="f4f7e73e-bc42-4735-bf47-2092f30e7660" TYPE="xfs"
-    /dev/mapper/rootrhel-home: UUID="159c3a91-e4e6-45f3-884c-bcc5822fb22a" TYPE="xfs"
-    /dev/mapper/rootrhel-opt: UUID="2022bd67-f07d-4708-8e8d-d178e1f5456e" TYPE="xfs"
-    /dev/mapper/rootrhel-varlogaudit: UUID="fffceae4-7c14-4900-9def-d36a83c50c57" TYPE="xfs"
-    /dev/mapper/rootrhel-varlog: UUID="d254a82b-b806-4f00-944f-d719120e1581" TYPE="xfs"
-    /dev/mapper/rootrhel-var: UUID="a0d8a606-1b4c-4023-9876-2a43d5506d47" TYPE="xfs"
-
-    [root@qradar ~]# cat /etc/fstab | grep  "mapper\|swap\|xfs"
-    /dev/mapper/rootrhel-root /                    xfs        inode64,logbsize=256k,noatime,nobarrier 0 0
-    UUID=d8fd5697-61a3-45a4-952f-5d8b4f27ba20 /boot                xfs        defaults             0 0
-    /dev/mapper/rootrhel-home /home                xfs        inode64,logbsize=256k,noatime,nobarrier 0 0
-    /dev/mapper/rootrhel-opt /opt                 xfs        inode64,logbsize=256k,noatime,nobarrier 0 0
-    UUID=378930d5-4dac-4a4a-87ab-16412678a0e3 /recovery            xfs        defaults             0 0
-    /dev/mapper/rootrhel-storetmp /storetmp            xfs        inode64,logbsize=256k,noatime,nobarrier 0 0
-    /dev/mapper/rootrhel-tmp /tmp                 xfs        inode64,logbsize=256k,noatime,nobarrier 0 0
-    /dev/mapper/rootrhel-var /var                 xfs        inode64,logbsize=256k,noatime,nobarrier 0 0
-    /dev/mapper/rootrhel-varlog /var/log             xfs        inode64,logbsize=256k,noatime,nobarrier 0 0
-    /dev/mapper/rootrhel-varlogaudit /var/log/audit       xfs        inode64,logbsize=256k,noatime,nobarrier 0 0
-    UUID=98ff1a98-fc33-4926-aa6e-4b8ac6ccbfad swap                 swap       defaults             0 0
-
-    [root@qradar ~]# df -l -T -x tmpfs -x devtmpfs
-    Filesystem                       Type     1K-blocks     Used Available Use% Mounted on
-    /dev/mapper/rootrhel-root        xfs       50822916 23131248  27691668  46% /
-    /dev/sda2                        xfs        1038336   293780    744556  29% /boot
-    /dev/sda3                        xfs       33538048  9762504  23775544  30% /recovery
-    /dev/mapper/rootrhel-home        xfs        1038336    33160   1005176   4% /home
-    /dev/mapper/rootrhel-tmp         xfs        3135488    55224   3080264   2% /tmp
-    /dev/mapper/rootrhel-opt         xfs       13096960  4920112   8176848  38% /opt
-    /dev/mapper/rootrhel-var         xfs        5232640   286888   4945752   6% /var
-    /dev/mapper/rootrhel-storetmp    xfs       15718400    66648  15651752   1% /storetmp
-    /dev/mapper/rootrhel-varlog      xfs       15718400   450012  15268388   3% /var/log
-    /dev/mapper/rootrhel-varlogaudit xfs        3135488    80052   3055436   3% /var/log/audit
-
-    [root@qradar bin]# mount | sort | grep -v ca_jail | grep xfs
-    /dev/mapper/rootrhel-home on /home type xfs (rw,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
-    /dev/mapper/rootrhel-opt on /opt type xfs (rw,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
-    /dev/mapper/rootrhel-root on / type xfs (rw,noatime,attr2,inode64,noquota)
-    /dev/mapper/rootrhel-storetmp on /storetmp type xfs (rw,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
-    /dev/mapper/rootrhel-tmp on /tmp type xfs (rw,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
-    /dev/mapper/rootrhel-varlogaudit on /var/log/audit type xfs (rw,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
-    /dev/mapper/rootrhel-varlog on /var/log type xfs (rw,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
-    /dev/mapper/rootrhel-var on /var type xfs (rw,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
-    /dev/sda2 on /boot type xfs (rw,relatime,attr2,inode64,noquota)
-    /dev/sda3 on /recovery type xfs (rw,relatime,attr2,inode64,noquota)
-
-    [root@qradar ~]# swapon -s
-    Filename                                Type            Size    Used    Priority
-    /dev/sda5                               partition       4194300 264     -2
-
-    
-    
-Inspect `/dev/sda`:
-
-    [root@qradar ~]# parted /dev/sda u s print
-    Model: VMware, VMware Virtual S (scsi)
-    Disk /dev/sda: 293601280s
-    Sector size (logical/physical): 512B/512B
-    Partition Table: gpt
-    Disk Flags: pmbr_boot
-
-    Number  Start       End         Size        File system     Name  Flags
-     1      2048s       4095s       2048s                             bios_grub
-     2      4096s       2101247s    2097152s    xfs
-     3      2101248s    69210111s   67108864s   xfs
-     4      69210112s   285208575s  215998464s                        lvm
-     5      285208576s  293597183s  8388608s    linux-swap(v1)
-
-
-We will use `sgdisk` for some inspections.
-\
-First download it:
-
-    cd
-    wget http://mirror.centos.org/centos/7/os/x86_64/Packages/gdisk-0.8.10-3.el7.x86_64.rpm
-    mkdir bin gdisk
-    cd gdisk
-    rpm2cpio ../gdisk-0.8.10-3.el7.x86_64.rpm | cpio -idmv
-    cd ../bin
-    ln -s ../gdisk/usr/sbin/sgdisk
-
-    sgdisk
-
-Then gather info:
-
-    [root@qradar bin]# sgdisk -p /dev/sda
-    Disk /dev/sda: 293601280 sectors, 140.0 GiB
-    Logical sector size: 512 bytes
-    Disk identifier (GUID): E7A603C6-870C-4605-A5AA-1E296702D362
-    Partition table holds up to 128 entries
-    First usable sector is 34, last usable sector is 293601246
-    Partitions will be aligned on 2048-sector boundaries
-    Total free space is 6077 sectors (3.0 MiB)
-
-    Number  Start (sector)    End (sector)  Size       Code  Name
-       1            2048            4095   1024.0 KiB  EF02
-       2            4096         2101247   1024.0 MiB  0700
-       3         2101248        69210111   32.0 GiB    0700
-       4        69210112       285208575   103.0 GiB   8E00
-       5       285208576       293597183   4.0 GiB     8200
-
-    [root@qradar bin]# sgdisk -i 4 /dev/sda
-    Partition GUID code: E6D6D379-F507-44C2-A23C-238F2A3DF928 (Linux LVM)
-    Partition unique GUID: 05977C2D-293D-4497-A984-0D5706F459AD
-    First sector: 69210112 (at 33.0 GiB)
-    Last sector: 285208575 (at 136.0 GiB)
-    Partition size: 215998464 sectors (103.0 GiB)
-    Attribute flags: 0000000000000000
-    Partition name: ''
-    
-    [root@qradar bin]# sgdisk -i 5 /dev/sda
-    Partition GUID code: 0657FD6D-A4AB-43C4-84E5-0933C84B4F4F (Linux swap)
-    Partition unique GUID: E6687DC7-4F16-4740-9E36-35D9618F2FE8
-    First sector: 285208576 (at 136.0 GiB)
-    Last sector: 293597183 (at 140.0 GiB)
-    Partition size: 8388608 sectors (4.0 GiB)
-    Attribute flags: 0000000000000000
-    Partition name: ''
-
-    [root@qradar bin]# sgdisk --display-alignment  --first-in-largest --end-of-largest --first-aligned-in-largest /dev/sda
-    2048
-    293597184
-    293601246
-    293597184
-
+	lsblk -f -p
+<!-- -->
+	NAME                                 FSTYPE      LABEL UUID                                   MOUNTPOINT
+	/dev/sda
+	├─/dev/sda1
+	├─/dev/sda2                          xfs               938ef8ed-39b8-4638-b200-fc7402595258   /boot
+	├─/dev/sda3                          xfs               55c2aed0-a933-4775-bd24-f43a533a86ab   /recovery
+	├─/dev/sda4                          LVM2_member       nQhv0f-bikx-kVba-uVtM-jfGV-a2ci-Nwj1rL
+	│ ├─/dev/mapper/storerhel-transient  xfs               cceae07f-44d3-4011-965f-7206bf32efab   /transient
+	│ └─/dev/mapper/storerhel-store      xfs               f72d1975-c8d4-4359-bd76-d976388b2481   /store
+	├─/dev/sda5                          LVM2_member       E9f26P-yde5-uStL-XYlk-JuEF-ooWx-P3ZQR3
+	│ ├─/dev/mapper/rootrhel-root        xfs               6318ec5f-f504-467e-977f-879e1190274b   /
+	│ ├─/dev/mapper/rootrhel-storetmp    xfs               be7a1ed4-9e73-40e9-aaa5-46d8c5e40794   /storetmp
+	│ ├─/dev/mapper/rootrhel-tmp         xfs               c53ae190-4071-45d6-8a48-f5e78083d1eb   /tmp
+	│ ├─/dev/mapper/rootrhel-home        xfs               92e975dc-95a0-4b1a-88af-a197c97e5da6   /home
+	│ ├─/dev/mapper/rootrhel-opt         xfs               54f17a1c-1ac6-4b9e-b79d-7fce890ef336   /opt
+	│ ├─/dev/mapper/rootrhel-varlogaudit xfs               87521bfb-28e1-4b9f-9458-c860f0e554ea   /var/log/audit
+	│ ├─/dev/mapper/rootrhel-varlog      xfs               fbec1486-b47f-4aa3-aabb-eea1e3ebbde8   /var/log
+	│ └─/dev/mapper/rootrhel-var         xfs               a4453252-4459-4a68-8f5d-52222ee88709   /var
+	└─/dev/sda6                          swap              887b0b32-32fb-4632-b6f7-ef5bc1a27b97   [SWAP]
+<!-- -->
+	blkid
+<!-- -->
+	/dev/sda1: PARTUUID="5e1cc006-791e-4ca8-b12d-5f1f3f22a804"
+	/dev/sda2: UUID="938ef8ed-39b8-4638-b200-fc7402595258" TYPE="xfs" PARTUUID="644bbb4f-e404-4e43-ac6e-866903044900"
+	/dev/sda3: UUID="55c2aed0-a933-4775-bd24-f43a533a86ab" TYPE="xfs" PARTUUID="ff9eea7b-1db2-43a9-9807-28971edbc30b"
+	/dev/sda4: UUID="nQhv0f-bikx-kVba-uVtM-jfGV-a2ci-Nwj1rL" TYPE="LVM2_member" PARTUUID="30064e1a-301c-43a6-bcaf-b0da9f8bbfc5"
+	/dev/sda5: UUID="E9f26P-yde5-uStL-XYlk-JuEF-ooWx-P3ZQR3" TYPE="LVM2_member" PARTUUID="9f4d475b-ef15-4c2f-a705-8693cdf7a5c1"
+	/dev/sda6: UUID="887b0b32-32fb-4632-b6f7-ef5bc1a27b97" TYPE="swap" PARTUUID="b1a43033-1a9c-497b-adf6-0030e35c6117"
+	/dev/mapper/rootrhel-root: UUID="6318ec5f-f504-467e-977f-879e1190274b" TYPE="xfs"
+	/dev/mapper/rootrhel-storetmp: UUID="be7a1ed4-9e73-40e9-aaa5-46d8c5e40794" TYPE="xfs"
+	/dev/mapper/rootrhel-tmp: UUID="c53ae190-4071-45d6-8a48-f5e78083d1eb" TYPE="xfs"
+	/dev/mapper/rootrhel-home: UUID="92e975dc-95a0-4b1a-88af-a197c97e5da6" TYPE="xfs"
+	/dev/mapper/rootrhel-opt: UUID="54f17a1c-1ac6-4b9e-b79d-7fce890ef336" TYPE="xfs"
+	/dev/mapper/rootrhel-varlogaudit: UUID="87521bfb-28e1-4b9f-9458-c860f0e554ea" TYPE="xfs"
+	/dev/mapper/rootrhel-varlog: UUID="fbec1486-b47f-4aa3-aabb-eea1e3ebbde8" TYPE="xfs"
+	/dev/mapper/rootrhel-var: UUID="a4453252-4459-4a68-8f5d-52222ee88709" TYPE="xfs"
+	/dev/mapper/storerhel-transient: UUID="cceae07f-44d3-4011-965f-7206bf32efab" TYPE="xfs"
+	/dev/mapper/storerhel-store: UUID="f72d1975-c8d4-4359-bd76-d976388b2481" TYPE="xfs"
+<!-- -->
+	df -l -T -x tmpfs -x devtmpfs -x overlay
+<!-- -->
+	Filesystem                       Type 1K-blocks     Used Available Use% Mounted on
+	/dev/mapper/rootrhel-root        xfs   13096960  3992124   9104836  31% /
+	/dev/sda2                        xfs    1038336   316644    721692  31% /boot
+	/dev/sda3                        xfs   33538048  5498856  28039192  17% /recovery
+	/dev/mapper/rootrhel-home        xfs    1038336    34188   1004148   4% /home
+	/dev/mapper/storerhel-transient  xfs   29615996    33144  29582852   1% /transient
+	/dev/mapper/rootrhel-var         xfs    5232640   215428   5017212   5% /var
+	/dev/mapper/storerhel-store      xfs  118468080 23794792  94673288  21% /store
+	/dev/mapper/rootrhel-storetmp    xfs   15718400    43372  15675028   1% /storetmp
+	/dev/mapper/rootrhel-opt         xfs   13096960  4727380   8369580  37% /opt
+	/dev/mapper/rootrhel-tmp         xfs    3135488    38376   3097112   2% /tmp
+	/dev/mapper/rootrhel-varlog      xfs   15718400   304136  15414264   2% /var/log
+	/dev/mapper/rootrhel-varlogaudit xfs    3135488    96644   3038844   4% /var/log/audit
+<!-- -->
+	mount | sort | grep -v ca_jail | grep xfs
+<!-- -->
+	/dev/mapper/rootrhel-home on /home type xfs (rw,nosuid,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
+	/dev/mapper/rootrhel-opt on /opt type xfs (rw,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
+	/dev/mapper/rootrhel-root on / type xfs (rw,noatime,attr2,inode64,noquota)
+	/dev/mapper/rootrhel-storetmp on /storetmp type xfs (rw,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
+	/dev/mapper/rootrhel-tmp on /tmp type xfs (rw,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
+	/dev/mapper/rootrhel-varlogaudit on /var/log/audit type xfs (rw,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
+	/dev/mapper/rootrhel-varlog on /var/log type xfs (rw,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
+	/dev/mapper/rootrhel-var on /var type xfs (rw,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
+	/dev/mapper/storerhel-store on /store type xfs (rw,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
+	/dev/mapper/storerhel-transient on /transient type xfs (rw,noatime,attr2,nobarrier,inode64,logbsize=256k,noquota)
+	/dev/sda2 on /boot type xfs (rw,relatime,attr2,inode64,noquota)
+	/dev/sda3 on /recovery type xfs (rw,relatime,attr2,inode64,noquota)
+<!-- -->
+	swapon -s
+<!-- -->
+	Filename                                Type            Size    Used    Priority
+	/dev/sda6                               partition       15405052        62720   -2
+<!-- -->
+	parted -s /dev/sda unit s print
+<!-- -->
+	Model: VMware, VMware Virtual S (scsi)
+	Disk /dev/sda: 536870912s
+	Sector size (logical/physical): 512B/512B
+	Partition Table: gpt
+	Disk Flags: pmbr_boot
+	
+	Number  Start       End         Size        File system     Name  Flags
+	 1      2048s       4095s       2048s                             bios_grub
+	 2      4096s       2101247s    2097152s    xfs
+	 3      2101248s    69210111s   67108864s   xfs
+	 4      69210112s   365539327s  296329216s                        lvm
+	 5      365539328s  506056703s  140517376s                        lvm
+	 6      506056704s  536866815s  30810112s   linux-swap(v1)
 
 \
 1 - Ensure a full backup
 ------------------------
 
-VM backup or cold-snapshot must be readily available in case of disaster.
+**DO NOT SKIP THIS STEP**
 \
-You may also want a quick GPT partition backup (especially for Option A):
+VM backup or cold-snapshot must be readily available in case of disaster/errors.
 
-    sgdisk --backup=/root/sda_backup /dev/sda
 
 \
 2 - Stop all services
@@ -197,144 +140,168 @@ I tried with everything still running, this is just to be on a safer side...
 \
 Stop QRadar services (last line is optional, should be safe enough as long as the db is shut down):
 
-    systemctl stop ecs-ec-ingress
-    systemctl stop ecs-ep
-    service hostcontext stop
-    service tomcat stop
-    service hostservices stop 
-    systemctl stop systemStabMon crond chronyd postfix snmpd containerd rhnsd rhsmcertd syslog
+	systemctl stop ecs-ec-ingress
+	systemctl stop ecs-ep
+	service hostcontext stop
+	service tomcat stop
+	service hostservices stop 
+	systemctl stop systemStabMon crond chronyd postfix snmpd containerd rhnsd rhsmcertd syslog
+
+You may also want to disable automatic startup of the services BEFORE shutting down the VM (or disable network connectivity).
 
 \
-3 - Option-A - Add LVM space by extending existing virtual disk
----------------------------------------------------------------
+3 - Option A - Add LVM space by using a new virtual disk (assuming /dev/sdb)
+----------------------------------------------------------------------------
 
-Extend virtual disk:
+This is a safer option: just add a new virtual disk to the VM.
 \
-On ESXi, this should be doable online - https://kb.vmware.com/s/article/1004047
+It can generally be done online - if disk does not show up, either reboot or:
+
+	/usr/bin/rescan-scsi-bus.sh
+
+or these alternative low-level commands:
+	
+	ls /sys/class/scsi_host/
+	echo "- - -" > /sys/class/scsi_host/host0/scan
+	echo "- - -" > /sys/class/scsi_host/host1/scan
+	echo "- - -" > /sys/class/scsi_host/host2/scan
+	udevadm trigger --verbose --subsystem-match=block; udevadm settle
+	udevadm trigger --verbose --type=devices --subsystem-match=scsi_disk ; udevadm settle
+
+Re-read partition table
+
+	partprobe /dev/sdb
+
+Create LVM PV on the whole disk
+	
+	pvcreate /dev/sdb
+
+Add the new PV to VG `storerhel` or `rootrhel` - e.g.:
+
+  	vgextend storerhel /dev/sdb
+
+\
+3 - Option B - Add LVM space by extending an existing virtual disk and creating a new partition
+-----------------------------------------------------------------------------------------------
+
+Extend the virtual disk (e.g., adding +512GB):
+\
+On ESXi, this can be done online - https://kb.vmware.com/s/article/1004047
 \
 If you can plan for a longer downtime, just do it offline...
 \
-Say we want to extend by +12 GB
-\
-We need to remove swap on /dev/sda5, to allow for /dev/sda4 expansion.
-\
-Remove Swap:
+To re-read the new disk size:
 
-    swapoff -a
-    #dd if=/dev/zero of=/dev/sda5 bs=1MB
-    #parted /dev/sda rm 5
-    partprobe /dev/sda
+	/usr/bin/rescan-scsi-bus.sh
 
-Calculate new sda4 partition boundary (added 12GB):
+or this alternative low-level command:
 
-    [root@qradar bin]# LASTSECTOR=$(parted /dev/sda u s print | grep "^ 4" | awk '{print $3}' | sed -e 's/s//')
-    [root@qradar bin]# echo $LASTSECTOR
-    285208575
+	echo 1 > /sys/class/block/sda/device/rescan
 
-    [root@qradar bin]# INCREASESIZE=$((12 * 1024*1024*1024 / 512 ))
-    [root@qradar bin]# echo $INCREASESIZE
-    25165824
+Re-read partition table
 
-    [root@qradar bin]# NEWLASTSECTOR=$((LASTSECTOR + INCREASESIZE))
-    [root@qradar bin]# echo $NEWLASTSECTOR
-    310374399
-
-Resize /dev/sda4, adding +12GB:
-
-    parted /dev/sda u s resizepart 4 $NEWLASTSECTOR
-    partprobe /dev/sda
-
-Re-create swap: // TODO: this can done with parted + check again partition type 0x8200 ?
-
-    sgdisk --disk-guid=98ff1a98-fc33-4926-aa6e-4b8ac6ccbfad -N 5 /dev/sda
-    partprobe  /dev/sda
-    mkswap -U 98ff1a98-fc33-4926-aa6e-4b8ac6ccbfad /dev/sda5
-  	swapon -a
-
-Resize PV to use new space:
-
-    pvresize /dev/sda4
-
-    [root@qradar ~]# pvdisplay
-    File descriptor 63 (pipe:[3417390]) leaked on pvdisplay invocation. Parent PID 12896: -bash
-      --- Physical volume ---
-      PV Name               /dev/sda4
-      VG Name               rootrhel
-      PV Size               <115.00 GiB / not usable 3.00 MiB
-      Allocatable           yes
-      PE Size               4.00 MiB
-      Total PE              29438
-  	  Free PE               3072
-      Allocated PE          26366
-      PV UUID               M9N7PH-3gD5-mXwO-GU1N-Do3x-kdQ1-pEXZs7
-
-    [root@qradar ~]# vgdisplay
-    File descriptor 63 (pipe:[3630354]) leaked on vgdisplay invocation. Parent PID 12896: -bash
-      --- Volume group ---
-      VG Name               rootrhel
-      System ID
-      Format                lvm2
-      Metadata Areas        1
-      Metadata Sequence No  12
-      VG Access             read/write
-      VG Status             resizable
-      MAX LV                0
-      Cur LV                8
-      Open LV               8
-      Max PV                0
-      Cur PV                1
-      Act PV                1
-      VG Size               114.99 GiB
-      PE Size               4.00 MiB
-      Total PE              29438
-      Alloc PE / Size       26366 / 102.99 GiB
-  	  Free  PE / Size       3072 / 12.00 GiB
-      VG UUID               M4PqAA-uqNe-e3bm-0nw6-QclB-jxWp-Szde0x
-
+	partprobe /dev/sda
 
 \
-3 - Option-B - Add LVM space by using a new virtual disk
---------------------------------------------------------
+Verify the new size has been detected
 
-This is a safer option: just add a new virtual disk to the VM.
-It can generally be done online. If disk does not show up, either reboot or:
+	parted -s /dev/sda unit s print | grep "Disk /dev/sda"
+<!-- -->
+	Disk /dev/sda: 1073741824s
+\
+From the parted output in step 0, we take the last partition ending sector (536866815s) and add 1 to it (536866816s): this will be the starting sector for the next partition that we're creating:
 
-    ls /sys/class/scsi_host/
-    echo "- - -" > /sys/class/scsi_host/host0/scan
-    echo "- - -" > /sys/class/scsi_host/host1/scan
-    echo "- - -" > /sys/class/scsi_host/host2/scan
-    udevadm trigger --verbose --subsystem-match=block; udevadm settle
-    udevadm trigger --verbose --type=devices --subsystem-match=scsi_disk ; udevadm settle
-    blockdev --rereadpt /dev/sdb
-    partprobe /dev/sdb
+	parted  /dev/sda
 
-Create LVM PV on whole disk
+The `parted` commands will be:
+
+	unit s
+	mkpart
+	(just hit Enter at the partition naming question)
+	(just hit Enter at the filesystem question)
+	536866816s
+	100%
+	set 7 lvm on
+	quit
+
+Output example:
+
+	GNU Parted 3.1
+	Using /dev/sda
+	Welcome to GNU Parted! Type 'help' to view a list of commands.
+	(parted) unit s
+	(parted) mkpart
+	Partition name?  []?
+	File system type?  [ext2]?
+	Start? 536866816s
+	End? 100%
+	(parted) set 7 lvm on
+	(parted) quit
+	Information: You may need to update /etc/fstab.
+
+Check outcome:
+
+	parted -s /dev/sda unit s print
+<!-- -->
+	Model: VMware, VMware Virtual S (scsi)
+	Disk /dev/sda: 1073741824s
+	Sector size (logical/physical): 512B/512B
+	Partition Table: gpt
+	Disk Flags: pmbr_boot
 	
-	  pvcreate /dev/sdb
+	Number  Start       End          Size        File system     Name  Flags
+	 1      2048s       4095s        2048s                             bios_grub
+	 2      4096s       2101247s     2097152s    xfs
+	 3      2101248s    69210111s    67108864s   xfs
+	 4      69210112s   365539327s   296329216s                        lvm
+	 5      365539328s  506056703s   140517376s                        lvm
+	 6      506056704s  536866815s   30810112s   linux-swap(v1)
+	 7      536866816s  1073739775s  536872960s                        lvm
 
-Add new PV to VG
 
-  	vgextend rootrhel /dev/sdb
+Create LVM PV on the new partition
+	
+	pvcreate /dev/sda7
 
+Add the new PV to VG `storerhel` or `rootrhel` - e.g.:
+
+  	vgextend storerhel /dev/sda7
+
+\
+3 - ~~Option C - Add LVM space by extending an existing virtual disk and maintaining original layout~~
+--------------------------------------------------------------------------------------------------
+
+We need to remove the swap partition from  on /dev/sda6, to allow for /dev/sda5 expansion, then we re-create swap.
+\
+This was just an "experiment" - really not required...
+\
+\
+This option has been REMOVED, it was unstable and complicated. If you're curious, just inspect repo history - DO NOT TRUST THIS SECTION !!!
 
 \
 4 - Extend LV
 -------------
 
-    lvresize -L +1G /dev/rootrhel/root
-    lvresize -L +1G /dev/rootrhel/storetmp
-    lvresize -L +1G /dev/rootrhel/tmp
-    lvresize -L +1G /dev/rootrhel/home
-    lvresize -L +1G /dev/rootrhel/opt
-    lvresize -L +1G /dev/rootrhel/varlogaudit
-    lvresize -L +1G /dev/rootrhel/varlog
-    lvresize -L +1G /dev/rootrhel/var
-    lvextend -l 100%FREE /dev/storerhel/store
+Extend the required logical volumes, e.g.:
 
+- `storerhel`
+
+		lvextend -l 90%FREE  /dev/storerhel/store
+		lvextend -l 100%FREE /dev/storerhel/transient
+- `rootrhel`
+
+		lvextend -L +5G   /dev/rootrhel/root
+		lvextend -L +5G   /dev/rootrhel/storetmp
+		lvextend -L +5G   /dev/rootrhel/tmp
+		lvextend -L +5G   /dev/rootrhel/home
+		lvextend -L +5G   /dev/rootrhel/opt
+		lvextend -L +1G   /dev/rootrhel/var
+		lvextend -L +5G   /dev/rootrhel/varlogaudit
+		lvextend -L +100% /dev/rootrhel/varlog
 
 \
-5 - Grow XFS Volume
--------------------
+5 - Grow XFS Volumes
+--------------------
 
     xfs_growfs /dev/rootrhel/root
     xfs_growfs /dev/rootrhel/storetmp
@@ -345,9 +312,12 @@ Add new PV to VG
     xfs_growfs /dev/rootrhel/varlog
     xfs_growfs /dev/rootrhel/var
     xfs_growfs /dev/storerhel/store
+    xfs_growfs /dev/storerhel/transient
 
 \
 6 - Reboot
 ----------
 
 Reboot system and check everything is fine
+\
+Commit VM snapshot.
