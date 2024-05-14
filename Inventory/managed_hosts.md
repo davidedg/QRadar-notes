@@ -16,3 +16,26 @@ Event Collectors/Processors:
     ORDER BY mh.id,dc.name ;
     " | psql -U qradar
 
+
+List MHs for Processors:
+
+    SELECT DISTINCT
+    mh.ip,
+    mh.hostname,
+    mh.isconsole,
+    mh.appliancetype
+    FROM
+    managedhost mh,
+    serverhost s,
+    managedhostcapabilityxref mhcap,
+    component c
+    WHERE
+         mh.status = 'Active'
+    AND mh.id = s.managed_host_id
+    AND s.status != '14'
+    AND mhcap.managedhostid = mh.id
+    AND mhcap.componentid = c.id
+    AND c.type = 'eventprocessor'
+    ORDER BY
+    mh.appliancetype ;
+    
