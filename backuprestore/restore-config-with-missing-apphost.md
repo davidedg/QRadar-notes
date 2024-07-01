@@ -4,13 +4,27 @@
 - Upload the backup tar file (See [this article](https://www.ibm.com/support/pages/qradar-cannot-import-configuration-backups-due-invalid-backup-archive) if bigger than 512MB)
 - Restore Everything (or leave out what you don't need)
 - Wait :D
-- Go to Admin - System and License Management and remove all the hosts except the AppHost
+- (optional): [Change admin password](https://www.ibm.com/support/pages/qradar-changing-admin-account-password-ui-or-cli): `/opt/qradar/support/changePasswd.sh -a`
 - Force stop all apps (see [this](https://www.ibm.com/support/pages/qradar-changing-status-application-fails-error-application-instance-not-required-state) article)
-- Get the Console managed host id: `psql -U qradar -c "SELECT id FROM managedhost WHERE isconsole;"`
-- Update `installed_application_host_type_property` to point the app instances to the Console
 
-      UPDATE installed_application_host_type_property SET value = <CONSOLE_ID> WHERE key = 'managed_host_id';
-- Edit `/store/qapp/appdefaultserver.cache` to contain the Console managed host id
+      psql -U qradar -c "update installed_application_instance set status='STOPPED',task_status='COMPLETED';"
 
-- Go to Admin - System and License Management and remove the AppHost
+- Update `installed_application_host_type_property` to point the app instances to the Console:
+
+      echo "
+      SELECT * from installed_application_host_type_property;
+      UPDATE installed_application_host_type_property 
+      SET value = ( SELECT id FROM managedhost WHERE isconsole AND status = 'Active' )
+      WHERE key = 'managed_host_id';
+      SELECT * from installed_application_host_type_property;
+      " | psql -U qradar
+
+- Edit `/store/qapp/appdefaultserver.cache` to contain the Console managed host id:
+
+      $(psql -U qradar -t -A -c "SELECT id FROM managedhost WHERE isconsole AND status = 'Active';") | tee /store/qapp/appdefaultserver.cache
+
+- Go to Admin - System and License Management and remove all the managed hosts, including the AppHost
 - Run a Full Deploy
+- (optional) Upload AppHost backup archive to `/store/apps/backup/`
+- (optional) Restore AppHost container data: `/opt/qradar/bin/app-volume-backup.py`
+- Start the apps
