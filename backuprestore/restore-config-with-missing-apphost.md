@@ -24,6 +24,7 @@
       $(psql -U qradar -t -A -c "SELECT id FROM managedhost WHERE isconsole AND status = 'Active';") | tee /store/qapp/appdefaultserver.cache
 
 - Go to Admin - System and License Management and remove all the managed hosts, including the AppHost
+- (optional) Allow for apps on your Console with [APP_CONSOLE_MEMORY_PERCENT](https://github.com/davidedg/QRadar-notes/tree/main/LAB_EnlargeYour_Apps_Memory_on_AIO_Console)
 - Run a Full Deploy
 - (optional) Upload AppHost backup archive to `/store/apps/backup/`
 - (optional) Restore AppHost container data: `/opt/qradar/bin/app-volume-backup.py`
