@@ -13,7 +13,7 @@ This is **totally unsupported** by IBM - see
 https://www.ibm.com/support/pages/does-qradar-support-lvm-file-system-storage-expansion
 --
 
-This has only been tested in a LAB while preparing a "Plan B" for a DR where /opt was not properly sized and only had 2GB available on no further expansions could be possible.
+This has only been tested in a LAB while preparing a "Plan B" for a DR where /opt was not properly sized and only had 2GB available and no further expansions could be possible.
 In the end, this was not needed.
 But the lab did complete a 7.4.3FP5 -> 7.5U7 upgrade while this hack was enabled ... :D
 
@@ -30,7 +30,7 @@ Plan
 1 - Allocate space and setup loop device
 ----------------------
 
-Uee some free space on /recovery/
+Use some free space on /recovery/
 
     lofile=/recovery/lvm-addon-1.looplvm
     fallocate -l 5G "$lofile"
