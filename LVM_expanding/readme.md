@@ -231,6 +231,8 @@ Output example:
 	Welcome to GNU Parted! Type 'help' to view a list of commands.
 	(parted) unit s
 	(parted) mkpart
+	Warning: Not all of the space available to /dev/sda appears to be used, you can fix the GPT to use all of the space (an extra ... blocks) or continue with the current setting?
+	Fix/Ignore? Fix
 	Partition name?  []?
 	File system type?  [ext2]?
 	Start? 536866816s
@@ -239,6 +241,8 @@ Output example:
 	(parted) quit
 	Information: You may need to update /etc/fstab.
 
+Notice: some times there might be an extra warning re mismatched available space. You can answer "Fix".
+\
 Check outcome:
 
 	parted -s /dev/sda unit s print
@@ -286,8 +290,8 @@ Extend the required logical volumes, e.g.:
 
 - `storerhel`
 
-		lvextend -l 90%FREE  /dev/storerhel/store
-		lvextend -l 100%FREE /dev/storerhel/transient
+		lvextend -l +90%FREE  /dev/storerhel/store
+		lvextend -l +100%FREE /dev/storerhel/transient
 - `rootrhel`
 
 		lvextend -L +5G   /dev/rootrhel/root
