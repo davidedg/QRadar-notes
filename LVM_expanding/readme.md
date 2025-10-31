@@ -7,9 +7,15 @@ Apply EXTREME CAUTION if you want to follow along.
 \
 **!!! DISCLAIMER !!!**
 --
-This is **totally unsupported** by IBM - see
+~~This is **totally unsupported** by IBM - see~~
 \
-https://www.ibm.com/support/pages/does-qradar-support-lvm-file-system-storage-expansion
+~~https://www.ibm.com/support/pages/does-qradar-support-lvm-file-system-storage-expansion~~
+\
+Update June 2025:
+\
+IBM are finally supporting LVM expansions, albeit only starting from certain versions:
+\
+https://www.ibm.com/docs/en/qsip/7.5?topic=administration-lvm-support
 --
 \
 Plan
