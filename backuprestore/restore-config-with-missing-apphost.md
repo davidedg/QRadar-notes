@@ -1,6 +1,7 @@
 # Restore a Config backup to a new system, without the original AppHost
 
 - Prepare a new Console (3199), same patch level of the backup file
+- The hostnames must be exactly the same, this is particularly true if HA is/was involved
 - Upload the backup tar file (See [this article](https://www.ibm.com/support/pages/qradar-cannot-import-configuration-backups-due-invalid-backup-archive) if bigger than 512MB)
 - Restore Everything (or leave out what you don't need)
 - Wait :D
@@ -24,6 +25,7 @@
       echo $(psql -U qradar -t -A -c "SELECT id FROM managedhost WHERE isconsole AND status = 'Active';") | tee /store/qapp/appdefaultserver.cache
 
 - Go to Admin - System and License Management and remove all the managed hosts, including the AppHost
+- If a host was in HA, QRadar will likely refuse to remove it - see [forcibly_remove_ha](./forcibly_remove_ha.md)
 - (optional) Allow for apps on your Console with [APP_CONSOLE_MEMORY_PERCENT](https://github.com/davidedg/QRadar-notes/tree/main/LAB_EnlargeYour_Apps_Memory_on_AIO_Console)
 - Run a Full Deploy
 - (optional) Upload AppHost backup archive to `/store/apps/backup/`
